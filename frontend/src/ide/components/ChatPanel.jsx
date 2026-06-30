@@ -136,9 +136,14 @@ export default function ChatPanel({ getContext, onMaximize, onFilesChanged }) {
     setStreaming(true);
     const controller = new AbortController();
     abortRef.current = controller;
-    const conv = chats.conversations.find((c) => c.id === convId);
+    const conv = useChatHistory.getState().conversations.find((c) => c.id === convId);
     const history = (conv?.messages || []).filter((m) => m.content).map((m) => ({ role: m.role, content: m.content }));
-    history[history.length - 1] = { role: "user", content: finalUser };
+    // Replace the last user message with the augmented finalUser (agent prefix + file context)
+    if (history.length > 0 && history[history.length - 1].role === "user") {
+      history[history.length - 1] = { role: "user", content: finalUser };
+    } else {
+      history.push({ role: "user", content: finalUser });
+    }
     let buf = "";
     await streamChat({
       model: settings.model,
