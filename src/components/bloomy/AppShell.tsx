@@ -35,7 +35,6 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 const PRIMARY_NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/chat", label: "Chat", icon: MessageSquareText },
-  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Projects", icon: FolderGit2 },
 ];
 

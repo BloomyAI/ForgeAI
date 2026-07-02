@@ -19,8 +19,9 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
-import { Route as AuthenticatedAgentsRouteImport } from './routes/_authenticated/agents'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiConversationsIdRouteImport } from './routes/api/conversations.$id'
+import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as AuthenticatedChatIdRouteImport } from './routes/_authenticated/chat.$id'
 import { Route as ApiConversationsIdMessagesRouteImport } from './routes/api/conversations.$id.messages'
 import { Route as ApiAuthCallbackGoogleRouteImport } from './routes/api/auth/callback/google'
@@ -75,15 +76,20 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAgentsRoute = AuthenticatedAgentsRouteImport.update({
-  id: '/agents',
-  path: '/agents',
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiConversationsIdRoute = ApiConversationsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiConversationsRoute,
+} as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedChatIdRoute = AuthenticatedChatIdRouteImport.update({
   id: '/$id',
@@ -111,7 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
-  '/agents': typeof AuthenticatedAgentsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects': typeof AuthenticatedProjectsRoute
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/conversations': typeof ApiConversationsRouteWithChildren
   '/chat/$id': typeof AuthenticatedChatIdRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/conversations/$id': typeof ApiConversationsIdRouteWithChildren
   '/api/auth/callback/discord': typeof ApiAuthCallbackDiscordRoute
   '/api/auth/callback/google': typeof ApiAuthCallbackGoogleRoute
@@ -128,7 +135,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
-  '/agents': typeof AuthenticatedAgentsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects': typeof AuthenticatedProjectsRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/conversations': typeof ApiConversationsRouteWithChildren
   '/chat/$id': typeof AuthenticatedChatIdRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/conversations/$id': typeof ApiConversationsIdRouteWithChildren
   '/api/auth/callback/discord': typeof ApiAuthCallbackDiscordRoute
   '/api/auth/callback/google': typeof ApiAuthCallbackGoogleRoute
@@ -147,7 +155,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/downloads': typeof DownloadsRoute
-  '/_authenticated/agents': typeof AuthenticatedAgentsRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/conversations': typeof ApiConversationsRouteWithChildren
   '/_authenticated/chat/$id': typeof AuthenticatedChatIdRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/conversations/$id': typeof ApiConversationsIdRouteWithChildren
   '/api/auth/callback/discord': typeof ApiAuthCallbackDiscordRoute
   '/api/auth/callback/google': typeof ApiAuthCallbackGoogleRoute
@@ -166,7 +175,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/downloads'
-    | '/agents'
+    | '/admin'
     | '/chat'
     | '/dashboard'
     | '/projects'
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/conversations'
     | '/chat/$id'
+    | '/api/admin/users'
     | '/api/conversations/$id'
     | '/api/auth/callback/discord'
     | '/api/auth/callback/google'
@@ -183,7 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/downloads'
-    | '/agents'
+    | '/admin'
     | '/chat'
     | '/dashboard'
     | '/projects'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/conversations'
     | '/chat/$id'
+    | '/api/admin/users'
     | '/api/conversations/$id'
     | '/api/auth/callback/discord'
     | '/api/auth/callback/google'
@@ -201,7 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/downloads'
-    | '/_authenticated/agents'
+    | '/_authenticated/admin'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
     | '/_authenticated/projects'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/conversations'
     | '/_authenticated/chat/$id'
+    | '/api/admin/users'
     | '/api/conversations/$id'
     | '/api/auth/callback/discord'
     | '/api/auth/callback/google'
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   DownloadsRoute: typeof DownloadsRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiConversationsRoute: typeof ApiConversationsRouteWithChildren
+  ApiAdminUsersRoute: typeof ApiAdminUsersRoute
   ApiAuthCallbackDiscordRoute: typeof ApiAuthCallbackDiscordRoute
   ApiAuthCallbackGoogleRoute: typeof ApiAuthCallbackGoogleRoute
 }
@@ -298,11 +311,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/agents': {
-      id: '/_authenticated/agents'
-      path: '/agents'
-      fullPath: '/agents'
-      preLoaderRoute: typeof AuthenticatedAgentsRouteImport
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/conversations/$id': {
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/conversations/$id'
       preLoaderRoute: typeof ApiConversationsIdRouteImport
       parentRoute: typeof ApiConversationsRoute
+    }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/chat/$id': {
       id: '/_authenticated/chat/$id'
@@ -355,7 +375,7 @@ const AuthenticatedChatRouteWithChildren =
   AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAgentsRoute: typeof AuthenticatedAgentsRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
@@ -363,7 +383,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAgentsRoute: AuthenticatedAgentsRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
@@ -402,6 +422,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadsRoute: DownloadsRoute,
   ApiChatRoute: ApiChatRoute,
   ApiConversationsRoute: ApiConversationsRouteWithChildren,
+  ApiAdminUsersRoute: ApiAdminUsersRoute,
   ApiAuthCallbackDiscordRoute: ApiAuthCallbackDiscordRoute,
   ApiAuthCallbackGoogleRoute: ApiAuthCallbackGoogleRoute,
 }

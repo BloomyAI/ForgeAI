@@ -24,7 +24,7 @@ function Landing() {
       <header className="sticky top-0 z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-10">
         <ForgeLockup />
         <nav className="hidden items-center gap-7 text-sm text-text-muted md:flex">
-          {["Product", "Agents", "Pricing", "Docs"].map((l) => (
+          {["Product", "Pricing", "Docs"].map((l) => (
             <a key={l} href="#" className="relative transition-colors hover:text-foreground">{l}</a>
           ))}
         </nav>
@@ -105,10 +105,9 @@ function Landing() {
 
       {/* Features */}
       <section className="mx-auto max-w-7xl px-6 pb-32 md:px-10">
-        <div className="grid gap-px overflow-hidden rounded-3xl border border-border/60 bg-divider md:grid-cols-3">
+        <div className="grid gap-px overflow-hidden rounded-3xl border border-border/60 bg-divider md:grid-cols-2">
           {[
             { title: "Chat", body: "Streaming responses, beautiful markdown, ambient typing." },
-            { title: "Agents", body: "Compose tools, memory and prompts into reliable workflows." },
             { title: "Editor", body: "Inline AI, ghost text, diff review — a writer's IDE." },
           ].map((f) => (
             <div key={f.title} className="bg-elevated p-8">

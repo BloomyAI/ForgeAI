@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
-import { PUTER_MODELS, PROVIDER_GROUPS, type PuterModel } from "@/integrations/puter";
+import { NVIDIA_MODELS, PROVIDER_GROUPS, type NvidiaModel } from "@/integrations/nvidia";
 import { ProviderIcon } from "./ProviderIcon";
 
 export function ModelSelector({
@@ -8,8 +8,8 @@ export function ModelSelector({
   onSelect,
   align = "right",
 }: {
-  model: PuterModel;
-  onSelect: (m: PuterModel) => void;
+  model: NvidiaModel;
+  onSelect: (m: NvidiaModel) => void;
   align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
@@ -23,7 +23,7 @@ export function ModelSelector({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const current = PUTER_MODELS[model];
+  const current = NVIDIA_MODELS[model];
 
   return (
     <div ref={ref} className="relative">
@@ -48,7 +48,8 @@ export function ModelSelector({
                 {group.label}
               </div>
               {group.models.map((key) => {
-                const info = PUTER_MODELS[key];
+                const info = NVIDIA_MODELS[key];
+                const isGlm52 = key === "z-ai/glm-5.2";
                 return (
                   <button
                     key={key}
@@ -58,10 +59,16 @@ export function ModelSelector({
                     }}
                     className={`w-full px-3 py-2 text-left text-[13px] flex items-center gap-2 transition-colors hover:bg-muted/50 ${
                       model === key ? "bg-muted/80 font-medium text-foreground" : "text-foreground/80"
-                    }`}
+                    } ${isGlm52 ? "relative font-semibold text-amber-500 hover:text-amber-400" : ""}`}
+                    style={isGlm52 ? { textShadow: "0 0 8px rgba(245, 158, 11, 0.4)" } : undefined}
                   >
                     <ProviderIcon provider={info.provider} size={14} />
                     {info.label}
+                    {isGlm52 && (
+                      <span className="ml-auto text-[8px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 animate-pulse font-bold tracking-wider uppercase">
+                        Strong
+                      </span>
+                    )}
                   </button>
                 );
               })}

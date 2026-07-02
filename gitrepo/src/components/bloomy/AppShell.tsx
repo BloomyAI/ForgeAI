@@ -35,7 +35,6 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 const PRIMARY_NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/chat", label: "Chat", icon: MessageSquareText },
-  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/projects", label: "Projects", icon: FolderGit2 },
 ];
 
@@ -49,6 +48,7 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [recentChats, setRecentChats] = useState<ConversationRow[]>([]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -99,11 +99,12 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
     navigate({ to: "/auth", replace: true });
   }
 
+  // Open a fresh composer at /chat. The conversation is persisted only after the
+  // first message is sent. The `t` search param remounts the thread when already
+  // on /chat so the "+" button always clears the current draft.
   function createNewChat() {
-    window.location.hash = "new";
-    if (window.location.pathname !== "/chat") {
-      navigate({ to: "/chat" });
-    }
+    // Navigate to /chat with a UUID to force remount and clear state
+    navigate({ to: "/chat", search: { t: crypto.randomUUID() } });
   }
 
   function startRename(chat: ConversationRow) {
@@ -147,7 +148,7 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (pathname === `/chat/${id}`) {
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/chat" });
       }
     } catch {
       setRecentChats(prev);
@@ -182,12 +183,23 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
         <div className="mt-1 flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between px-2.5 py-1">
             <span className="text-[11px] uppercase tracking-wider text-text-muted">Recent</span>
+          {/* The "+" button creates a new chat. On the Downloads page we want to show a "Coming Soon" state instead. */}
+          {pathname.startsWith("/downloads") ? (
+            <button
+              disabled
+              title="Coming Soon"
+              className="rounded-md p-1 text-text-muted opacity-50 cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
+          ) : (
             <button
               onClick={createNewChat}
               className="rounded-md p-1 text-text-muted transition-colors hover:bg-sidebar-accent hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
+          )}
           </div>
           <div className="flex-1 overflow-y-auto">
             {recentChats.map((c) => (
@@ -245,9 +257,13 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
           <NavSection items={SECONDARY_NAV} pathname={pathname} />
           <div className="mt-auto">
             <div className="elev-1 flex items-center gap-2 rounded-xl border border-border/60 bg-elevated/70 p-2">
-              <div className="elev-1 grid h-8 w-8 shrink-0 place-items-center rounded-full forge-gradient-bg text-[12px] font-semibold text-white">
+              <button
+                onClick={() => {/* TODO: Open profile picture upload */}}
+                className="elev-1 grid h-8 w-8 shrink-0 place-items-center rounded-full forge-gradient-bg text-[12px] font-semibold text-white hover:opacity-80 transition-opacity"
+                title="Change profile picture"
+              >
                 {(email || "?").slice(0, 1).toUpperCase()}
-              </div>
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12px] font-medium text-foreground">{email || "Loading..."}</div>
                 <div className="text-[10px] uppercase tracking-wider text-text-muted">Forge account</div>
@@ -279,7 +295,10 @@ function NavSection({ items, pathname, onChat }: { items: NavItem[]; pathname: s
     <nav className="flex flex-col gap-0.5">
       {items.map((item, i) => {
         const Icon = item.icon;
-        const isActive = !item.soon && pathname.startsWith(item.to) && item.to !== "/";
+        // For Chat button, only active when exactly on /chat, not on /chat/$id
+        const isActive = !item.soon && (
+          item.to === "/chat" ? pathname === "/chat" : pathname.startsWith(item.to)
+        ) && item.to !== "/";
 
         if (item.to === "/chat" && onChat) {
           return (

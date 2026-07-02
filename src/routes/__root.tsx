@@ -105,12 +105,10 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-        <link rel="preload" href="https://js.puter.com/v2/" as="script" />
       </head>
       <body>
         {children}
         <Scripts />
-        <script src="https://js.puter.com/v2/"></script>
       </body>
     </html>
   );

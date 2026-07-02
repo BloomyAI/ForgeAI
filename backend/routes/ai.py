@@ -4,6 +4,7 @@ Provides REST API endpoints for AI chat operations with multiple providers
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from ai_service import ai_service
@@ -69,7 +70,7 @@ async def chat(request: ChatRequest):
                 except Exception as e:
                     yield f"Error: {str(e)}"
 
-            return generate()
+            return StreamingResponse(generate(), media_type="text/event-stream")
 
         # Handle non-streaming response
         return {

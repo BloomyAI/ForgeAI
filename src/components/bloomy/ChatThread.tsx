@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/bloomy/AppShell";
 import { ForgeMark } from "@/components/bloomy/Logo";
 import { ModelSelector } from "@/components/bloomy/ModelSelector";
-import { puterAI, type PuterModel } from "@/integrations/puter";
+import { nvidiaAI, type NvidiaModel } from "@/integrations/nvidia";
 import { ArrowUp, Loader2, Paperclip, X, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,7 @@ interface ChatMessage {
 export function ChatThread({ id }: { id: string }) {
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [title, setTitle] = useState("New chat");
-  const [model, setModel] = useState<PuterModel>("claude-sonnet-4-6");
+  const [model, setModel] = useState<NvidiaModel>("moonshotai/kimi-k2.6");
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -76,7 +76,7 @@ export function ChatThread({ id }: { id: string }) {
         isNew.current = false;
         titleRef.current = convo.title ?? "New chat";
         setTitle(convo.title ?? "New chat");
-        if (convo.model) setModel(convo.model as PuterModel);
+        if (convo.model) setModel(convo.model as NvidiaModel);
 
         const { data: messages } = await supabase
           .from("messages")
@@ -196,7 +196,6 @@ export function ChatThread({ id }: { id: string }) {
     setMsgs(withUser);
 
     setStreaming(true);
-    setSigningIn(!puterAI.isSignedIn());
 
     try {
       const history = withUser
@@ -215,7 +214,7 @@ export function ChatThread({ id }: { id: string }) {
       msgsRef.current = withPlaceholder;
       setMsgs(withPlaceholder);
 
-      await puterAI.chatStream(history, model, (chunk) => {
+      await nvidiaAI.chatStream(history, model, (chunk) => {
         full += chunk;
         const updated = withPlaceholder.map((m) =>
           m.id === assistantId ? { ...m, content: full } : m

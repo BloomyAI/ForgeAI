@@ -63,9 +63,8 @@ function Dashboard() {
           {name ? <>Hello, <span className="forge-gradient-text">{name}</span>.</> : <span className="forge-gradient-text">Welcome.</span>}
         </h1>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
           <Stat label="Conversations" value={counts?.chats ?? null} icon={MessageSquareText} to="/chat" />
-          <Stat label="Agents" value={counts?.agents ?? null} icon={Bot} to="/agents" />
           <Stat label="Projects" value={counts?.projects ?? null} icon={FolderGit2} to="/projects" />
         </div>
 
