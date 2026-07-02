@@ -115,6 +115,21 @@ export function ChatThread({ id }: { id: string }) {
     }
   }, [id]);
 
+  // Pre-authenticate with Puter AI on mount to avoid popup delays during chat
+  useEffect(() => {
+    async function preAuth() {
+      try {
+        if (puterAI.isAvailable() && !puterAI.isSignedIn()) {
+          await puterAI.ensureAuth();
+        }
+      } catch (err) {
+        // Silent fail - we'll try again when user sends a message
+        console.log("Pre-auth failed, will retry on send:", err);
+      }
+    }
+    preAuth();
+  }, []);
+
   function refreshSidebar() {
     window.dispatchEvent(new Event("forge:refresh-chats"));
   }

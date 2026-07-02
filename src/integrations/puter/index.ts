@@ -101,10 +101,17 @@ export class PuterAI {
 
     // Try to sign in — this opens a popup
     try {
-      await window.puter.auth.signIn({ attempt_temp_user_creation: true });
+      await window.puter.auth.signIn({ 
+        attempt_temp_user_creation: true,
+        popup: true 
+      });
       this._signedIn = true;
     } catch (e) {
       console.error("Puter auth failed:", e);
+      const errorDetail = extractErrorDetail(e);
+      if (errorDetail.includes("popup") || errorDetail.includes("blocked")) {
+        throw new Error("Pop-up was blocked. Please allow pop-ups for this site and try again.");
+      }
       throw new Error("Sign-in was cancelled or failed. Please allow the pop-up to use AI.");
     }
   }
