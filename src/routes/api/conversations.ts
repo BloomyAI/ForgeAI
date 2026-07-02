@@ -24,13 +24,16 @@ export const Route = createFileRoute("/api/conversations")({
       },
 
       POST: async ({ request }) => {
+        console.log("[API] POST /api/conversations - Creating conversation");
         const { data: ctx, error } = await createSupabaseContext<Database>(request, { auth: "user" });
         if (error) {
+          console.error("[API] Auth error:", error);
           return Response.json({ message: error.message }, { status: error.status });
         }
 
         const body = await request.json().catch(() => ({}));
         const { title, model } = body as { title?: string; model?: string };
+        console.log("[API] Request body:", { title, model, userId: ctx.userClaims!.id });
 
         const insertData: any = {
           user_id: ctx.userClaims!.id,
@@ -45,9 +48,11 @@ export const Route = createFileRoute("/api/conversations")({
           .single();
 
         if (dbError) {
+          console.error("[API] Database error:", dbError);
           return Response.json({ message: dbError.message }, { status: 500 });
         }
 
+        console.log("[API] Created conversation:", data);
         return Response.json(data, { status: 201 });
       },
     },

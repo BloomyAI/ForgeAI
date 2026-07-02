@@ -221,8 +221,6 @@ export function ChatThread({ id }: { id: string }) {
       // Use the ID returned by the API
       convoId.current = convo.id;
       isNew.current = false;
-      // Navigate to the correct URL with the server-generated ID
-      navigate({ to: "/chat/$id", params: { id: convo.id }, replace: true });
       return convo.id;
     }
 
@@ -243,10 +241,12 @@ export function ChatThread({ id }: { id: string }) {
     }
 
     // Save user message
+    console.log("[ChatThread] Saving user message to conversation:", apiId);
     const savedUser = await fetchJSON(`/api/conversations/${apiId}/messages`, {
       method: "POST",
       body: JSON.stringify({ role: "user", content: text }),
     });
+    console.log("[ChatThread] Saved user message:", savedUser);
 
     const userMsg: ChatMessage = savedUser
       ? toChatMessage(savedUser)
