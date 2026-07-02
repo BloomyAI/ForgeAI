@@ -63,11 +63,8 @@ export function ChatThread({ id }: { id: string }) {
       const convo = await fetchJSON(`/api/conversations/${id}`);
       if (cancelled) return;
 
-      // If we successfully retrieved a conversation, it is definitely not a new one.
-      // Previously the code attempted to check a non‑existent `convo.message` field,
-      // which could leave `isNew.current` true and cause a duplicate conversation
-      // to be created on the next send. We now treat any fetched conversation as
-      // existing and clear the `isNew` flag.
+      // If we successfully retrieved a conversation, load its data.
+      // If the conversation doesn't exist yet (new chat), we'll create it on first message.
       if (convo) {
         isNew.current = false;
         titleRef.current = convo.title ?? "New chat";
@@ -76,6 +73,11 @@ export function ChatThread({ id }: { id: string }) {
         const loaded = (convo.messages ?? []).map(toChatMessage);
         msgsRef.current = loaded;
         setMsgs(loaded);
+      } else {
+        // Conversation doesn't exist yet - this is a new chat
+        // It will be created when the user sends the first message
+        isNew.current = true;
+        convoId.current = id;
       }
 
       setLoading(false);
@@ -148,12 +150,13 @@ export function ChatThread({ id }: { id: string }) {
       if (!isNew.current) return convoId.current;
       const convo = await fetchJSON("/api/conversations", {
         method: "POST",
-        body: JSON.stringify({ title: t, model }),
+        body: JSON.stringify({ title: t, model, id: convoId.current }),
       });
       if (!convo) return null;
-      convoId.current = convo.id;
+      // Use the ID we already have from the URL, not the one returned by API
+      // This ensures we stay on the same conversation ID
       isNew.current = false;
-      return convo.id;
+      return convoId.current;
     }
 
     const apiId = await getApiId();
