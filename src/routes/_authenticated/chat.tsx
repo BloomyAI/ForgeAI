@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChatThread } from "@/components/bloomy/ChatThread";
+import { useEffect } from "react";
 
 /**
  * Chat route: create a new conversation immediately and navigate to it.
@@ -14,25 +15,26 @@ function ChatRoute() {
   const navigate = Route.useNavigate();
 
   // Create a new conversation immediately on mount
-  async function createNewConversation() {
-    try {
-      const response = await fetch("/api/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "New chat", model: "claude-sonnet-4-6" }),
-      });
-      const data = await response.json();
-      if (data.id) {
-        // Navigate to the new conversation with its proper UUID
-        navigate({ to: "/chat/$id", params: { id: data.id }, replace: true });
+  useEffect(() => {
+    async function createNewConversation() {
+      try {
+        const response = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "New chat", model: "claude-sonnet-4-6" }),
+        });
+        const data = await response.json();
+        if (data.id) {
+          // Navigate to the new conversation with its proper UUID
+          navigate({ to: "/chat/$id", params: { id: data.id }, replace: true });
+        }
+      } catch (error) {
+        console.error("Failed to create conversation:", error);
       }
-    } catch (error) {
-      console.error("Failed to create conversation:", error);
     }
-  }
 
-  // Trigger creation on mount
-  createNewConversation();
+    createNewConversation();
+  }, [navigate]);
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center">
