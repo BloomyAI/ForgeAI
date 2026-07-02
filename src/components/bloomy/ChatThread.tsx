@@ -48,7 +48,7 @@ export function ChatThread({ id }: { id: string }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const titleRef = useRef("New chat");
