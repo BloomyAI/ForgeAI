@@ -103,8 +103,8 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
   // first message is sent. The `t` search param remounts the thread when already
   // on /chat so the "+" button always clears the current draft.
   function createNewChat() {
-    // Navigate to /chat with a timestamp to force remount and clear state
-    navigate({ to: "/chat", search: { t: String(Date.now()) } });
+    // Navigate to /chat with a UUID to force remount and clear state
+    navigate({ to: "/chat", search: { t: crypto.randomUUID() } });
   }
 
   function startRename(chat: ConversationRow) {
