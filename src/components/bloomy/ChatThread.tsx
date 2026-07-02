@@ -4,7 +4,7 @@ import { AppShell } from "@/components/bloomy/AppShell";
 import { ForgeMark } from "@/components/bloomy/Logo";
 import { ModelSelector } from "@/components/bloomy/ModelSelector";
 import { puterAI, type PuterModel } from "@/integrations/puter";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2, Paperclip, X, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { MessageRow } from "@/lib/api";
@@ -57,12 +57,47 @@ export function ChatThread({ id }: { id: string }) {
   const [streaming, setStreaming] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const titleRef = useRef("New chat");
   const msgsRef = useRef<ChatMessage[]>([]);
   const convoId = useRef(id);
   const isNew = useRef(true);
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    setAttachedFiles((prev) => [...prev, ...files]);
+  }
+
+  function removeFile(index: number) {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function generateZipFromCode(content: string) {
+    const codeRegex = /```(\w+)?\n([\s\S]*?)```/g;
+    const files: { name: string; content: string }[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = codeRegex.exec(content)) !== null) {
+      const lang = match[1] || "txt";
+      const code = match[2];
+      files.push({ name: `code_${files.length + 1}.${lang}`, content: code });
+    }
+
+    if (files.length === 0) return;
+
+    // Create a simple text file with all code blocks
+    const allCode = files.map((f, i) => `=== File ${i + 1}: ${f.name} ===\n${f.content}\n\n`).join("\n");
+    const blob = new Blob([allCode], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "code_files.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -278,7 +313,18 @@ export function ChatThread({ id }: { id: string }) {
           ) : (
             <div className="mx-auto max-w-3xl space-y-6">
               {msgs.map((m) => (
-                <Bubble key={m.id} role={m.role}>{m.content}</Bubble>
+                <div key={m.id}>
+                  <Bubble role={m.role}>{m.content}</Bubble>
+                  {m.role === "assistant" && m.content.includes("```") && (
+                    <button
+                      onClick={() => generateZipFromCode(m.content)}
+                      className="mt-2 flex items-center gap-2 text-xs text-text-muted hover:text-foreground"
+                    >
+                      <Download className="h-3 w-3" />
+                      Download all code
+                    </button>
+                  )}
+                </div>
               ))}
               {streaming && (
                 <div className="flex items-center gap-2 text-sm text-text-muted">
@@ -291,28 +337,62 @@ export function ChatThread({ id }: { id: string }) {
         </div>
 
         <form onSubmit={(e) => void send(e)} className="border-t border-divider bg-background/60 px-6 py-4 backdrop-blur-xl md:px-10">
-          <div className="mx-auto flex max-w-3xl items-end gap-2">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void send(e);
-                }
-              }}
-              rows={1}
-              placeholder="Ask Forge anything..."
-              className="forge-input elev-1 max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl border border-border bg-elevated px-4 py-3 text-sm outline-none transition-all focus:border-foreground/40 focus:ring-2 focus:ring-forge-orange/30"
-            />
-            <button
-              type="submit"
-              disabled={streaming || !input.trim()}
-              className="forge-send-btn elev-1 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground transition-all hover:opacity-95 disabled:opacity-50"
-            >
-              {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-            </button>
+          <div className="mx-auto flex max-w-3xl flex-col gap-2">
+            {attachedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 rounded-lg bg-elevated px-3 py-1.5 text-sm">
+                    <Paperclip className="h-3 w-3 text-text-muted" />
+                    <span className="max-w-[150px] truncate">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="rounded-full p-0.5 hover:bg-muted"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="elev-1 grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-border bg-elevated text-text-muted transition-all hover:bg-muted"
+                title="Attach files"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send(e);
+                  }
+                }}
+                rows={1}
+                placeholder="Ask Forge anything..."
+                className="forge-input elev-1 max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl border border-border bg-elevated px-4 py-3 text-sm outline-none transition-all focus:border-foreground/40 focus:ring-2 focus:ring-forge-orange/30"
+              />
+              <button
+                type="submit"
+                disabled={streaming || !input.trim()}
+                className="forge-send-btn elev-1 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground transition-all hover:opacity-95 disabled:opacity-50"
+              >
+                {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -326,10 +406,13 @@ function renderMessage(content: string) {
   const codeRegex = /```([\s\S]*?)```/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
+  const codeBlocks: string[] = [];
+
   while ((match = codeRegex.exec(content)) !== null) {
     const before = content.slice(lastIndex, match.index);
     if (before) elements.push(...renderTextBlock(before, elements.length));
     const code = match[1];
+    codeBlocks.push(code);
     const key = `code-${elements.length}`;
     elements.push(
       <pre key={key} className="relative rounded bg-gray-800 p-4 text-sm text-white overflow-x-auto">
