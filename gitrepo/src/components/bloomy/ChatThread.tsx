@@ -1,0 +1,284 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { AppShell } from "@/components/bloomy/AppShell";
+import { ForgeMark } from "@/components/bloomy/Logo";
+import { ModelSelector } from "@/components/bloomy/ModelSelector";
+import { puterAI, type PuterModel } from "@/integrations/puter";
+import { ArrowUp, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import type { MessageRow } from "@/lib/api";
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
+}
+
+function toChatMessage(m: MessageRow): ChatMessage {
+  return {
+    id: m.id,
+    role: m.role as "user" | "assistant" | "system",
+    content: m.content,
+    timestamp: m.created_at,
+  };
+}
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token
+    ? { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+}
+
+async function fetchJSON(url: string, opts?: RequestInit) {
+  const headers = await authHeaders();
+  const merged = opts?.headers ? { ...headers, ...(opts.headers as Record<string, string>) } : headers;
+  const res = await fetch(url, { ...opts, headers: merged });
+  if (!res.ok) return null;
+  return res.json() as Promise<any>;
+}
+
+export function ChatThread({ id }: { id: string }) {
+  const navigate = useNavigate();
+  const [msgs, setMsgs] = useState<ChatMessage[]>([]);
+  const [title, setTitle] = useState("New chat");
+  const [model, setModel] = useState<PuterModel>("claude-sonnet-4-6");
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const titleRef = useRef("New chat");
+  const msgsRef = useRef<ChatMessage[]>([]);
+  const convoId = useRef(id);
+  const isNew = useRef(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const convo = await fetchJSON(`/api/conversations/${id}`);
+      if (cancelled) return;
+
+      if (convo && !convo.message) {
+        isNew.current = false;
+        titleRef.current = convo.title ?? "New chat";
+        setTitle(convo.title ?? "New chat");
+        if (convo.model) setModel(convo.model);
+        const loaded = (convo.messages ?? []).map(toChatMessage);
+        msgsRef.current = loaded;
+        setMsgs(loaded);
+      }
+
+      setLoading(false);
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  useEffect(() => {
+    scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
+  }, [msgs, streaming]);
+
+  function refreshSidebar() {
+    window.dispatchEvent(new Event("forge:refresh-chats"));
+  }
+
+  async function send(e: React.FormEvent, promptText?: string) {
+    e.preventDefault();
+    const text = (promptText ?? input).trim();
+    if (!text || streaming) return;
+    setInput("");
+
+    const t = titleRef.current === "New chat" && msgsRef.current.length === 0
+      ? (text.length > 30 ? text.slice(0, 27) + "..." : text)
+      : titleRef.current;
+
+    async function getApiId(): Promise<string | null> {
+      if (!isNew.current) return convoId.current;
+      const convo = await fetchJSON("/api/conversations", {
+        method: "POST",
+        body: JSON.stringify({ title: t, model }),
+      });
+      if (!convo) return null;
+      convoId.current = convo.id;
+      isNew.current = false;
+      return convo.id;
+    }
+
+    const apiId = await getApiId();
+    if (!apiId) {
+      toast.error("Failed to create conversation. Check SUPABASE_SECRET_KEY in .env");
+      return;
+    }
+
+    // Update title if needed
+    if (t !== titleRef.current) {
+      titleRef.current = t;
+      setTitle(t);
+      await fetchJSON(`/api/conversations/${apiId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: t }),
+      });
+    }
+
+    // Save user message
+    const savedUser = await fetchJSON(`/api/conversations/${apiId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ role: "user", content: text }),
+    });
+
+    const userMsg: ChatMessage = savedUser
+      ? toChatMessage(savedUser)
+      : { id: Date.now().toString(), role: "user", content: text, timestamp: new Date().toISOString() };
+
+    const withUser = [...msgsRef.current, userMsg];
+    msgsRef.current = withUser;
+    setMsgs(withUser);
+
+    setStreaming(true);
+    setSigningIn(!puterAI.isSignedIn());
+
+    try {
+      const history = withUser
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      let full = "";
+      const assistantId = (Date.now() + 1).toString();
+      const placeholder: ChatMessage = { id: assistantId, role: "assistant", content: "", timestamp: new Date().toISOString() };
+      const withPlaceholder = [...withUser, placeholder];
+      msgsRef.current = withPlaceholder;
+      setMsgs(withPlaceholder);
+
+      await puterAI.chatStream(history, model, (chunk) => {
+        full += chunk;
+        const updated = withPlaceholder.map((m) => m.id === assistantId ? { ...m, content: full } : m);
+        msgsRef.current = updated;
+        setMsgs([...updated]);
+      });
+
+      const savedAssistant = await fetchJSON(`/api/conversations/${apiId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ role: "assistant", content: full }),
+      });
+
+      if (savedAssistant) {
+        const final = withPlaceholder.map((m) => m.id === assistantId ? { ...m, id: savedAssistant.id, content: full } : m);
+        msgsRef.current = final;
+        setMsgs(final);
+      }
+
+      refreshSidebar();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to get response");
+      msgsRef.current = withUser;
+      setMsgs(withUser);
+    } finally {
+      setStreaming(false);
+      setSigningIn(false);
+      if (window.location.pathname === "/chat") {
+        navigate({ to: "/chat/$id", params: { id: apiId }, replace: true });
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell
+      topRight={
+        <div className="flex items-center gap-2 text-[12px] text-text-muted">
+          <ModelSelector model={model} onSelect={setModel} />
+        </div>
+      }
+    >
+      <div className="flex h-[calc(100dvh-3.5rem)] flex-col">
+        <div ref={scrollerRef} className="flex-1 overflow-y-auto px-6 py-8 md:px-10">
+          {msgs.length === 0 ? (
+            <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center">
+              <div className="text-center">
+                <h1 className="font-display text-[44px] leading-[1.05] tracking-tight md:text-[56px]">
+                  How can I help, <span className="forge-gradient-text">today</span>?
+                </h1>
+                <p className="mt-3 text-base text-text-muted">
+                  Ask me anything — I'm here to help you think, build, and ship.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-6">
+              {msgs.map((m) => (
+                <Bubble key={m.id} role={m.role}>{m.content}</Bubble>
+              ))}
+              {streaming && (
+                <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <span className="h-1.5 w-1.5 animate-forge-pulse rounded-full bg-forge-orange" />
+                  {signingIn ? "Signing in to Puter..." : "Forge is thinking..."}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={(e) => void send(e)} className="border-t border-divider bg-background/60 px-6 py-4 backdrop-blur-xl md:px-10">
+          <div className="mx-auto flex max-w-3xl items-end gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send(e);
+                }
+              }}
+              rows={1}
+              placeholder="Ask Forge anything..."
+              className="forge-input elev-1 max-h-40 min-h-[44px] flex-1 resize-none rounded-2xl border border-border bg-elevated px-4 py-3 text-sm outline-none transition-all focus:border-foreground/40 focus:ring-2 focus:ring-forge-orange/30"
+            />
+            <button
+              type="submit"
+              disabled={streaming || !input.trim()}
+              className="forge-send-btn elev-1 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground transition-all hover:opacity-95 disabled:opacity-50"
+            >
+              {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+            </button>
+          </div>
+        </form>
+      </div>
+    </AppShell>
+  );
+}
+
+function Bubble({ role, children }: { role: "user" | "assistant" | "system"; children: React.ReactNode }) {
+  if (role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div className="elev-1 max-w-xl whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+          {children}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3">
+      <div className="elev-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-elevated">
+        <ForgeMark size={36} />
+      </div>
+      <div className="max-w-2xl whitespace-pre-wrap pt-1 text-sm leading-relaxed text-foreground">{children}</div>
+    </div>
+  );
+}
