@@ -61,7 +61,8 @@ export function AppShell({ children, topRight }: { children: ReactNode; topRight
     try {
       const data = await conversations.list();
       setRecentChats(data.slice(0, 8));
-    } catch {
+    } catch (err) {
+      console.error("[AppShell] Failed to load chats:", err);
       setRecentChats([]);
     }
   }

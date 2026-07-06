@@ -248,8 +248,7 @@ export function ChatThread({ id, isNewChat = false }: { id: string; isNewChat?: 
     if (wasNew) {
       // Force the URL to update so refreshes will load this chat, 
       // but without a full reload or remount that interrupts streaming.
-      // setTimeout avoids race conditions with TanStack router mounting.
-      setTimeout(() => navigate({ to: "/chat/$id", params: { id: apiId }, replace: true }), 0);
+      window.history.replaceState(null, "", `/chat/${apiId}`);
     }
 
     // Update title if needed
