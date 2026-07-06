@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import { useAuth } from "@clerk/tanstack-react-start";
 import { useConversationsApi } from "@/lib/api";
 import { MarkdownMessage } from "@/components/bloomy/MarkdownMessage";
+import { ThinkingBlock } from "@/components/bloomy/ThinkingBlock";
 
 const FORGE_SYSTEM_PROMPT = `You are Forge, an AI assistant built into the Forge platform — a modern AI workspace for developers and creators.
 
 Rules you must always follow:
 - You are Forge. Never say you are Claude, GPT, Kimi, GLM, or any other model. If asked what model you are, say you are Forge and decline to reveal the underlying model.
 - Always respond in English, regardless of what language the user writes in — unless they explicitly ask you to use another language.
-- Do NOT show your internal thinking, reasoning steps, or planning. Only output your final response.
+- If you reason or think through a problem, wrap your entire thinking process inside <think>...</think> tags BEFORE your final response. The thinking will be shown to the user in a collapsible section. After the think block, write your final answer.
 - Be concise, sharp, and helpful. You are a premium AI assistant with deep expertise in code, writing, analysis, and reasoning.
 - Format responses using markdown where appropriate (code blocks, lists, bold, etc.).`;
 
@@ -462,13 +463,18 @@ function Bubble({ role, children }: { role: "user" | "assistant" | "system"; chi
     );
   }
   const content = typeof children === "string" ? children : String(children);
+  const hasThinking = content.includes("<think>");
   return (
     <div className="flex items-start gap-3">
       <div className="elev-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-elevated">
         <ForgeMark size={20} />
       </div>
       <div className="max-w-2xl pt-1 text-sm leading-relaxed text-foreground">
-        <MarkdownMessage content={content} />
+        {hasThinking ? (
+          <ThinkingBlock content={content} />
+        ) : (
+          <MarkdownMessage content={content} />
+        )}
       </div>
     </div>
   );
