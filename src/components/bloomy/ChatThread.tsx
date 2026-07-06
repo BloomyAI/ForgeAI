@@ -67,7 +67,7 @@ function getGreeting() {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export function ChatThread({ id }: { id: string }) {
+export function ChatThread({ id, isNewChat = false }: { id: string; isNewChat?: boolean }) {
   const { isSignedIn } = useAuth();
   const navigate = useNavigate();
   const conversations = useConversationsApi();
@@ -130,6 +130,13 @@ export function ChatThread({ id }: { id: string }) {
 
     async function load() {
       if (!isSignedIn) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      if (isNewChat) {
+        isNew.current = true;
+        convoId.current = id;
         if (!cancelled) setLoading(false);
         return;
       }
