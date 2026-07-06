@@ -4,10 +4,11 @@ import { AppShell } from "@/components/bloomy/AppShell";
 import { ForgeMark } from "@/components/bloomy/Logo";
 import { ModelSelector } from "@/components/bloomy/ModelSelector";
 import { nvidiaAI, type NvidiaModel } from "@/integrations/nvidia";
-import { ArrowUp, Loader2, Paperclip, X, Download } from "lucide-react";
+import { ArrowUp, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/tanstack-react-start";
 import { useConversationsApi } from "@/lib/api";
+import { MarkdownMessage } from "@/components/bloomy/MarkdownMessage";
 
 interface ChatMessage {
   id: string;
@@ -441,55 +442,6 @@ export function ChatThread({ id, isNewChat = false }: { id: string; isNewChat?: 
   );
 }
 
-/** Render markdown-like content with code blocks */
-function renderMessage(content: string) {
-  const elements: React.ReactNode[] = [];
-  const codeRegex = /```([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = codeRegex.exec(content)) !== null) {
-    const before = content.slice(lastIndex, match.index);
-    if (before) elements.push(...renderTextBlock(before, elements.length));
-    const code = match[1];
-    const key = `code-${elements.length}`;
-    elements.push(
-      <pre key={key} className="relative rounded bg-gray-800 p-4 text-sm text-white overflow-x-auto">
-        <code className="block whitespace-pre">{code}</code>
-        <button
-          className="absolute top-2 right-2 rounded bg-gray-700 px-2 py-1 text-xs hover:bg-gray-600"
-          onClick={() => navigator.clipboard.writeText(code)}
-        >Copy</button>
-        <a
-          className="absolute top-2 right-24 rounded bg-gray-700 px-2 py-1 text-xs hover:bg-gray-600"
-          href={URL.createObjectURL(new Blob([code], { type: "text/plain" }))}
-          download="snippet.txt"
-        >Download</a>
-      </pre>
-    );
-    lastIndex = codeRegex.lastIndex;
-  }
-  const tail = content.slice(lastIndex);
-  if (tail) elements.push(...renderTextBlock(tail, elements.length));
-  return elements;
-}
-
-function renderTextBlock(txt: string, startIdx: number): React.JSX.Element[] {
-  return txt.split("\n").map((line, i) => {
-    const heading = line.match(/^(#{1,6})\s+(.*)$/);
-    if (heading) {
-      const level = heading[1].length;
-      if (level === 1) return <h1 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h1>;
-      if (level === 2) return <h2 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h2>;
-      if (level === 3) return <h3 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h3>;
-      if (level === 4) return <h4 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h4>;
-      if (level === 5) return <h5 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h5>;
-      return <h6 key={`${startIdx}-${i}`} className="mt-2 mb-1 font-bold">{heading[2]}</h6>;
-    }
-    return <p key={`${startIdx}-${i}`} className="whitespace-pre-wrap">{line}</p>;
-  });
-}
-
 function Bubble({ role, children }: { role: "user" | "assistant" | "system"; children: React.ReactNode }) {
   if (role === "user") {
     return (
@@ -506,7 +458,9 @@ function Bubble({ role, children }: { role: "user" | "assistant" | "system"; chi
       <div className="elev-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-elevated">
         <ForgeMark size={20} />
       </div>
-      <div className="max-w-2xl pt-1 text-sm leading-relaxed text-foreground">{renderMessage(content)}</div>
+      <div className="max-w-2xl pt-1 text-sm leading-relaxed text-foreground">
+        <MarkdownMessage content={content} />
+      </div>
     </div>
   );
 }
