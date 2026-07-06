@@ -9,8 +9,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY backend/ /app/backend/
-COPY neon/schema.sql /app/neon/schema.sql
-
 RUN mkdir -p /app/workspace /app/public/downloads
 
 EXPOSE 8080
