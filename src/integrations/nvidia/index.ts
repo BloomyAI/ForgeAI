@@ -3,9 +3,10 @@
 
 export type NvidiaModel =
   | "moonshotai/kimi-k2.6"
-  | "z-ai/glm-5.2";
+  | "z-ai/glm-5.2"
+  | "google/gemma-4-31b-it";
 
-export type ModelProvider = "moonshot" | "z-ai";
+export type ModelProvider = "moonshot" | "z-ai" | "google";
 
 export interface ModelInfo {
   label: string;
@@ -16,11 +17,13 @@ export interface ModelInfo {
 export const NVIDIA_MODELS: Record<NvidiaModel, ModelInfo> = {
   "moonshotai/kimi-k2.6": { label: "Kimi K2.6", provider: "moonshot", providerLabel: "Moonshot AI" },
   "z-ai/glm-5.2": { label: "GLM 5.2", provider: "z-ai", providerLabel: "Zhipu AI" },
+  "google/gemma-4-31b-it": { label: "Google Gemini 3.5 Flash", provider: "google", providerLabel: "Google" },
 };
 
 export const PROVIDER_GROUPS: { provider: ModelProvider; label: string; models: NvidiaModel[] }[] = [
   { provider: "moonshot", label: "Moonshot AI", models: ["moonshotai/kimi-k2.6"] },
   { provider: "z-ai", label: "Zhipu AI", models: ["z-ai/glm-5.2"] },
+  { provider: "google", label: "Google", models: ["google/gemma-4-31b-it"] },
 ];
 
 export class NvidiaAI {
