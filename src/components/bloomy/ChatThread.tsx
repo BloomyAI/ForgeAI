@@ -72,7 +72,15 @@ export function ChatThread({ id }: { id: string }) {
   const navigate = useNavigate();
   const conversations = useConversationsApi();
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
-  const [greeting] = useState(() => getGreeting());
+  const [greeting, setGreeting] = useState(() => ({
+    prefix: "What are we creating ",
+    highlight: "today",
+    suffix: "?"
+  }));
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
   const [title, setTitle] = useState("New chat");
   const [model, setModel] = useState<NvidiaModel>("moonshotai/kimi-k2.6");
   const [input, setInput] = useState("");

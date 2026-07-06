@@ -10,10 +10,20 @@ export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatRoute,
 });
 
+import { useEffect, useState } from "react";
+
 function ChatRoute() {
-  // Use search param 't' if present (for + button), otherwise generate new UUID
+  // Use search param 't' if present (for + button), otherwise generate new UUID on client
   const search = Route.useSearch();
-  const id = (search.t || crypto.randomUUID()) as string;
+  const [id, setId] = useState<string | null>((search as any).t || null);
+
+  useEffect(() => {
+    if (!id) {
+      setId(crypto.randomUUID());
+    }
+  }, [id]);
+
+  if (!id) return null; // Avoid rendering on server if we don't have an ID
   return <ChatThread key={id} id={id} />;
 }
 
