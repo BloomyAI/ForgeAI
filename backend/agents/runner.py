@@ -227,8 +227,10 @@ async def run_agent_loop(messages: list, model: str, provider_str: str, user_id:
             
         assistant_message_content = "".join(content_buffer)
         
+        is_xml_fallback = False
         # Fallback for text-based XML tool calls
         if not tool_calls and "<tool_call>" in assistant_message_content:
+            is_xml_fallback = True
             import re
             import uuid
             matches = re.finditer(r"<tool_call>\s*({.*?})\s*</tool_call>", assistant_message_content, re.DOTALL)
@@ -248,21 +250,27 @@ async def run_agent_loop(messages: list, model: str, provider_str: str, user_id:
             break
             
         # Add assistant message with tool calls to conversation history
-        current_messages.append({
-            "role": "assistant",
-            "content": assistant_message_content,
-            "tool_calls": [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {
-                        "name": tc["name"],
-                        "arguments": json.dumps(tc["args"])
+        if is_xml_fallback:
+            current_messages.append({
+                "role": "assistant",
+                "content": assistant_message_content
+            })
+        else:
+            current_messages.append({
+                "role": "assistant",
+                "content": assistant_message_content,
+                "tool_calls": [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": json.dumps(tc["args"])
+                        }
                     }
-                }
-                for tc in tool_calls
-            ]
-        })
+                    for tc in tool_calls
+                ]
+            })
         
         # Execute tool calls
         for tc in tool_calls:
@@ -292,9 +300,15 @@ async def run_agent_loop(messages: list, model: str, provider_str: str, user_id:
                     
                 yield f"\n[TOOL_END: {tool_name}]\n"
                 
-            current_messages.append({
-                "role": "tool",
-                "tool_call_id": tool_id,
-                "name": tool_name,
-                "content": str(result)
-            })
+            if is_xml_fallback:
+                current_messages.append({
+                    "role": "user",
+                    "content": f"[TOOL RESULT: {tool_name}]\n{str(result)}"
+                })
+            else:
+                current_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_id,
+                    "name": tool_name,
+                    "content": str(result)
+                })
