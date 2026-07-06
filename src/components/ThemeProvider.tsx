@@ -12,14 +12,19 @@ export function useTheme() {
 }
 
 function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem("forge-theme") as Theme | null;
-  if (stored === "dark" || stored === "vintage" || stored === "light") return stored;
   return "dark";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+
+  useEffect(() => {
+    // Run once on mount to get stored theme
+    const stored = localStorage.getItem("forge-theme") as Theme | null;
+    if (stored === "dark" || stored === "vintage" || stored === "light") {
+      setThemeState(stored);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
