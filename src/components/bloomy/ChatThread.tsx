@@ -7,9 +7,9 @@ import { nvidiaAI, type NvidiaModel } from "@/integrations/nvidia";
 import { ArrowUp, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/tanstack-react-start";
-import { useConversationsApi } from "@/lib/api";
 import { MarkdownMessage } from "@/components/bloomy/MarkdownMessage";
 import { ThinkingBlock } from "@/components/bloomy/ThinkingBlock";
+import { ContentWithTools } from "@/components/bloomy/ToolBlock";
 
 const FORGE_SYSTEM_PROMPT = `You are Forge, an AI assistant built into the Forge platform — a modern AI workspace for developers and creators.
 
@@ -469,11 +469,11 @@ function Bubble({ role, children }: { role: "user" | "assistant" | "system"; chi
       <div className="elev-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-elevated">
         <ForgeMark size={20} />
       </div>
-      <div className="max-w-2xl pt-1 text-sm leading-relaxed text-foreground">
+      <div className="max-w-2xl pt-1 text-sm leading-relaxed text-foreground w-full">
         {hasThinking ? (
           <ThinkingBlock content={content} />
         ) : (
-          <MarkdownMessage content={content} />
+          <ContentWithTools content={content} />
         )}
       </div>
     </div>

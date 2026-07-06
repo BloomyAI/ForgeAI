@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { MarkdownMessage } from "./MarkdownMessage";
+import { ContentWithTools } from "./ToolBlock";
 
 /** Parse <think>...</think> from raw content, returns { thinking, answer } */
 export function parseThinking(raw: string): { thinking: string | null; answer: string } {
@@ -67,7 +68,7 @@ export function ThinkingBlock({ content }: { content: string }) {
       )}
 
       {/* Final answer — only render once thinking is done or there's no think block */}
-      {!isStreaming && answer && <MarkdownMessage content={answer} />}
+      {!isStreaming && answer && <ContentWithTools content={answer} />}
 
       {/* While streaming the answer after think closed */}
       {isStreaming && (
