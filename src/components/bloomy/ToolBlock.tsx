@@ -100,6 +100,20 @@ export function ContentWithTools({ content }: { content: string }) {
   // Check entire content for download URL
   const globalDownloadUrl = extractDownloadUrl(content);
 
+  // Also check each text segment for download URL
+  const segmentDownloadUrls: string[] = [];
+  segments.forEach((seg) => {
+    if (seg.type === "text" && seg.content) {
+      const url = extractDownloadUrl(seg.content);
+      if (url && !segmentDownloadUrls.includes(url)) {
+        segmentDownloadUrls.push(url);
+      }
+    }
+  });
+
+  // Use global URL if found, otherwise use segment URLs
+  const downloadUrls = globalDownloadUrl ? [globalDownloadUrl] : segmentDownloadUrls;
+
   return (
     <div className="flex flex-col gap-1 w-full">
       {segments.map((seg, i) => {
@@ -113,16 +127,17 @@ export function ContentWithTools({ content }: { content: string }) {
           return <ToolBlock key={i} call={seg.call!} status={seg.status as "running" | "completed"} />;
         }
       })}
-      {globalDownloadUrl && (
+      {downloadUrls.length > 0 && downloadUrls.map((url, idx) => (
         <a
-          href={globalDownloadUrl}
+          key={idx}
+          href={url}
           download
           className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
         >
           <Download className="h-3 w-3" />
           Download file
         </a>
-      )}
+      ))}
     </div>
   );
 }
