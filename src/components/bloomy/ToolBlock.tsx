@@ -92,34 +92,37 @@ export function ContentWithTools({ content }: { content: string }) {
   const segments = parseTools(content);
 
   const extractDownloadUrl = (text: string): string | null => {
-    const match = text.match(/\/api\/downloads\/[^/\s]+\/[^/\s]+\.zip/);
+    // Match /api/downloads/.../...zip pattern, even if it's in markdown links or has other characters
+    const match = text.match(/\/api\/downloads\/[^\/\s\)]+\/[^\/\s\)]+\.zip/);
     return match ? match[0] : null;
   };
+
+  // Check entire content for download URL
+  const globalDownloadUrl = extractDownloadUrl(content);
 
   return (
     <div className="flex flex-col gap-1 w-full">
       {segments.map((seg, i) => {
         if (seg.type === "text") {
-          const downloadUrl = seg.content ? extractDownloadUrl(seg.content) : null;
           return (
             <div key={i}>
               <MarkdownMessage content={seg.content || ""} />
-              {downloadUrl && (
-                <a
-                  href={downloadUrl}
-                  download
-                  className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
-                >
-                  <Download className="h-3 w-3" />
-                  Download file
-                </a>
-              )}
             </div>
           );
         } else {
           return <ToolBlock key={i} call={seg.call!} status={seg.status as "running" | "completed"} />;
         }
       })}
+      {globalDownloadUrl && (
+        <a
+          href={globalDownloadUrl}
+          download
+          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+        >
+          <Download className="h-3 w-3" />
+          Download file
+        </a>
+      )}
     </div>
   );
 }
