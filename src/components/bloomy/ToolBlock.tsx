@@ -5,6 +5,9 @@ import { MarkdownMessage } from "./MarkdownMessage";
  * Parses raw text and splits it into text segments and tool segments.
  */
 export function parseTools(raw: string) {
+  // Hide raw XML tool tags that models use as a fallback, including streaming incomplete tags
+  raw = raw.replace(/<tool_call>[\s\S]*?(?:<\/tool_call>|$)/g, "").trim();
+
   const segments = [];
   let current = raw;
 
